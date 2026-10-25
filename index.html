@@ -41,7 +41,6 @@
         const gy = H * 0.82;
         const HS = 380 * S;
 
-        // Simple Seeded Random for consistency with Python's default_rng(11)
         function createSeededRandom(seed) {
             let m = 0x80000000;
             let a = 1103515245;
@@ -53,6 +52,7 @@
             };
         }
         const random = createSeededRandom(11);
+        
         function randomNormal() {
             let u = 0, v = 0;
             while(u === 0) u = random();
@@ -78,8 +78,8 @@
                 al.push(a0 + curl * Math.pow(u, 1.6));
             }
             let ds = L / K;
-            let r =;
-            let h =;
+            let r = [0];
+            let h = [0];
             
             let current_r = 0;
             let current_h = 0;
@@ -197,10 +197,11 @@
             let mound = (1 - Math.pow(dx / (340 * S), 2)) * 55 * S;
             let y = gy - mound * Math.pow(random(), 0.5) + randomNormal() * 1.5;
             so_y.push(y);
+            let f = 0.8;
             so_col.push([
-                lerp(70, 140, random()) * 0.8,
-                lerp(55, 100, random()) * 0.8,
-                lerp(80, 120, random()) * 0.8
+                lerp(70, 140, random()) * f,
+                lerp(55, 100, random()) * f,
+                lerp(80, 120, random()) * f
             ]);
         }
 
@@ -249,11 +250,10 @@
         function render() {
             let t = (Date.now() - startTime) / 1000.0;
             
-            // Clear Screen with BG color
             ctx.fillStyle = 'rgb(4, 2, 10)';
             ctx.fillRect(0, 0, W, H);
 
-            let P = []; // points array {x, y, z, r, g, b}
+            let P = []; 
 
             let g = smooth(t / T_STEM);
             let e = smooth((t - T_B0) / (T_B1 - T_B0));
@@ -281,8 +281,8 @@
                     P.push({ x: cx0 + R * Math.cos(a), y: cy0 + R * Math.sin(a), z: -900, r: 255 * ha * 0.7, g: 190 * ha * 0.7, b: 225 * ha * 0.7 });
                 });
                 ang_c.forEach((ac, k) => {
-                  let ca = rot * 1.3 + k * Math.PI / 3;
-let ox = cx0 + R * Math.cos(ca), oy = cy0 + R * Math.sin(ca);
+                    let ca = rot * 1.3 + k * Math.PI / 3;
+                    let ox = cx0 + R * Math.cos(ca), oy = cy0 + R * Math.sin(ca);
 ac.forEach(ang => {
 let a = ang + rot;
 P.push({ x: ox + R * 0.5 * Math.cos(a), y: oy + R * 0.5 * Math.sin(a), z: -900, r: 255 * ha * 0.45, g: 170 * ha * 0.45, b: 215 * ha * 0.45 });
@@ -336,7 +336,7 @@ let hh = interp(p.pu[i], m_data.us, m_data.h);
 let wid = p.Wm * (0.55 + 0.45 * e) * p.prof[i] * (0.35 + 0.65 * rev);
 let ph = p.phi;
 let X = rr * Math.cos(ph) - p.pv[i] * wid * Math.sin(ph);
-let Z = rr * Math.PI * Math.sin(ph) / Math.PI + p.pv[i] * wid * Math.cos(ph);
+let Z = rr * Math.sin(ph) + p.pv[i] * wid * Math.cos(ph);
 let Y = hh + Math.pow(p.pv[i], 2) * wid * (0.30 * (1 - e) - 0.25 * e);
 let Xp = X * cp + Z * sp;
 let Zp = -X * sp + Z * cp;
@@ -359,7 +359,7 @@ let Ls = 215 * S * (0.4 + 0.6 * e) * sr;
 let m_data = midrib(Ls, lerp(0.15, 0.62, e), 0.55 * e);
 let ph = sdat.phi;
 for (let i = 0; i < 45; i++) {
-let u_val = (i / 45); // Distribution over stamen length
+let u_val = (i / 45);
 let rr = interp(u_val, m_data.us, m_data.r);
 let hh = interp(u_val, m_data.us, m_data.h);
 let X = rr * Math.cos(ph), Z = rr * Math.sin(ph), Y = hh;
@@ -367,7 +367,6 @@ let Xp = X * cp + Z * sp, Zp = -X * sp + Z * cp;
 let sy = Y * ct - Zp * st;
 P.push({ x: hx + Xp, y: hy - sy, z: Zp + 5, r: 245, g: 235, b: 200 });
 }
-// Anthers (Tips)
 let tx = m_data.r[m_data.r.length - 1] * Math.cos(ph);
 let tz = m_data.r[m_data.r.length - 1] * Math.sin(ph);
 let ty = m_data.h[m_data.h.length - 1];
@@ -376,7 +375,7 @@ let tsy = ty * ct - tzp * st;
 for (let i = 0; i < 35; i++) {
 let an_x = sdat.an[i][0] * 5 * S;
 let an_y = sdat.an[i][1] * 5 * S;
-let f = 0.8 + 0.4 * (i % 5 / 5);
+let f = 0.8 + 0.4 * (random());
 P.push({
 x: hx + txp + an_x * 1.6, y: hy - tsy + an_y * 0.7, z: tzp + 6,
 r: 255 * f, g: 150 * f, b: 40 * f
@@ -385,7 +384,7 @@ r: 255 * f, g: 150 * f, b: 40 * f
 });
 }
 }
-// Floating Sparks (Spore dispersal)
+// Floating Sparks
 if (e > 0.6) {
 let fa = smooth((e - 0.6) / 0.4);
 for (let i = 0; i < NF; i++) {
@@ -399,19 +398,15 @@ let b_c = f_ph[i] > 3.1 ? 80 : 205;
 P.push({ x: fx, y: fy, z: 300, r: r_c * fade, g: g_c * fade, b: b_c * fade });
 }
 }
-// Sort points by Z-depth (Z-buffering equivalent)
 P.sort((a, b) => a.z - b.z);
-// Draw points as pointillism brush dots
 P.forEach(p => {
 let ix = Math.floor(p.x);
 let iy = Math.floor(p.y);
 if (ix >= 0 && ix < W - 2 && iy >= 0 && iy < H - 2) {
 ctx.fillStyle = rgb(${Math.min(255, Math.max(0, p.r))}, ${Math.min(255, Math.max(0, p.g))}, ${Math.min(255, Math.max(0, p.b))});
-// Creating small 2x2 dot blocks for pointillism effect
 ctx.fillRect(ix, iy, 2, 2);
 }
 });
-// Apply Glow Layer
 ctx.globalCompositeOperation = 'screen';
 ctx.drawImage(canvas, 0, 0, W, H);
 ctx.globalCompositeOperation = 'source-over';
